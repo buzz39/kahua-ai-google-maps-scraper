@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps Scraper - Apollo Style Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .header-buttons {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close:hover {
+            opacity: 0.7;
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+        }
+
+        .settings-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .proxy-list {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f7fafc;
+            margin-top: 10px;
+        }
+
+        .proxy-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .proxy-item:last-child {
+            border-bottom: none;
+        }
+
+        .proxy-item input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .remove-proxy {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .add-proxy {
+            background: #38a169;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .api-docs {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .api-endpoint {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .method {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .method.post { background: #c6f6d5; color: #2f855a; }
+        .method.get { background: #bee3f8; color: #2b6cb0; }
+        .method.delete { background: #fed7d7; color: #c53030; }
+
+        .endpoint-path {
+            font-family: monospace;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .endpoint-description {
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+
+        .parameters {
+            margin-bottom: 15px;
+        }
+
+        .parameter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .parameter:last-child {
+            border-bottom: none;
+        }
+
+        .param-name {
+            font-weight: 600;
+            color: #2d3748;
+            min-width: 120px;
+        }
+
+        .param-type {
+            color: #718096;
+            font-size: 0.875rem;
+        }
+
+        .param-required {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .param-optional {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .example {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+
+        .example pre {
+            margin: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #718096;
+        }
+
+        .btn-danger {
+            background: #e53e3e;
+        }
+
+        .jobs-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .job-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .job-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .job-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .job-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-queued { background: #fed7d7; color: #c53030; }
+        .status-running { background: #c6f6d5; color: #2f855a; }
+        .status-completed { background: #bee3f8; color: #2b6cb0; }
+        .status-failed { background: #fed7d7; color: #c53030; }
+
+        .job-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.875rem;
+            color: #718096;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .results-section {
+            grid-column: 1 / -1;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .results-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .results-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .social-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .social-link:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .job-details {
+                grid-template-columns: 1fr;
+            }
+            .header-buttons {
+                position: static;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            
+            .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-map-marked-alt"></i> Google Maps Scraper</h1>
+            <p>Apollo-style business lead generation dashboard</p>
+            <div class="header-buttons">
+                <button class="header-btn" id="settingsBtn"><i class="fas fa-cog"></i> Settings</button>
+                <button class="header-btn" id="apiDocsBtn"><i class="fas fa-book"></i> API Docs</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalJobs">0</div>
+                <div class="stat-label">Total Jobs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="completedJobs">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="runningJobs">0</div>
+                <div class="stat-label">Running</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalBusinesses">0</div>
+                <div class="stat-label">Businesses Found</div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <h2><i class="fas fa-rocket"></i> Start New Scrape</h2>
+                <form id="scrapeForm">
+                    <div class="form-group">
+                        <label for="searchTerm">Search Term</label>
+                        <input type="text" id="searchTerm" class="form-control" placeholder="e.g., restaurants, coffee shops" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" class="form-control" placeholder="e.g., New York, Los Angeles" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maxResults">Max Results</label>
+                            <input type="number" id="maxResults" class="form-control" value="10" min="1" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="batchSize">Batch Size</label>
+                            <select id="batchSize" class="form-control">
+                                <option value="2">2 (Conservative)</option>
+                                <option value="3" selected>3 (Balanced)</option>
+                                <option value="4">4 (Fast)</option>
+                                <option value="5">5 (Very Fast)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stealthLevel">Stealth Level</label>
+                        <select id="stealthLevel" class="form-control">
+                            <option value="optimized" selected>Optimized (Faster)</option>
+                            <option value="high-stealth">High-Stealth (More Anti-Detection)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="proxy">Proxy (Optional)</label>
+                        <input type="text" id="proxy" class="form-control" placeholder="http://username:password@proxy.example.com:8080">
+                        <small style="color: #718096; font-size: 0.875rem;">Leave empty to use direct connection or configure in Settings</small>
+                    </div>
+                    
+                    <button type="button" class="btn" id="startBtn">
+                        <i class="fas fa-play"></i> Start Scraping
+                    </button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-tasks"></i> Active Jobs</h2>
+                <div class="jobs-list" id="jobsList">
+                    <p style="text-align: center; color: #718096;">No active jobs</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card results-section">
+            <h2><i class="fas fa-table"></i> Latest Results</h2>
+            <div id="resultsContainer">
+                <p style="text-align: center; color: #718096;">No results yet. Start a scraping job to see results here.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <span class="close" id="closeSettings">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Proxy Settings</h3>
+                    <div class="proxy-list" id="proxyList">
+                        <p style="text-align: center; color: #718096;">No proxies added yet.</p>
+                    </div>
+                    <button class="add-proxy" id="addProxyBtn">Add New Proxy</button>
+                </div>
+                <div class="settings-section">
+                    <h3>Stealth Level</h3>
+                    <p>Adjust the stealth level to balance speed and anti-detection.</p>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="stealthToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <p>Optimized (Faster): <span id="stealthStatus">Enabled</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="apiDocsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API Documentation</h2>
+                <span class="close" id="closeApiDocs">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="api-docs">
+                    <h3>Available Endpoints</h3>
+                                         <div class="api-endpoint">
+                         <div class="endpoint-header">
+                             <span class="method post">POST</span>
+                             <span class="endpoint-path">/api/scrape</span>
+                         </div>
+                         <p class="endpoint-description">Start a new scraping job.</p>
+                         <p>Parameters:</p>
+                         <div class="parameters">
+                             <div class="parameter">
+                                 <span class="param-name">searchTerm</span>
+                                 <span class="param-type">string</span>
+                                 <span class="param-required">required</span>
+                                 <span class="example">e.g., "coffee shops"</span>
+                             </div>
+                             <div class="parameter">
+                                 <span class="param-name">location</span>
+                                 <span class="param-type">string</span>
+                                 <span class="param-required">required</span>
+                                 <span class="example">e.g., "New York, NY"</span>
+                             </div>
+                             <div class="parameter">
+                                 <span class="param-name">maxResults</span>
+                                 <span class="param-type">integer</span>
+                                 <span class="param-optional">optional</span>
+                                 <span class="example">e.g., 10</span>
+                             </div>
+                             <div class="parameter">
+                                 <span class="param-name">batchSize</span>
+                                 <span class="param-type">integer</span>
+                                 <span class="param-optional">optional</span>
+                                 <span class="example">e.g., 3</span>
+                             </div>
+                             <div class="parameter">
+                                 <span class="param-name">stealthLevel</span>
+                                 <span class="param-type">string</span>
+                                 <span class="param-optional">optional</span>
+                                 <span class="example">e.g., "optimized"</span>
+                             </div>
+                             <div class="parameter">
+                                 <span class="param-name">proxy</span>
+                                 <span class="param-type">string|object</span>
+                                 <span class="param-optional">optional</span>
+                                 <span class="example">e.g., "http://proxy:8080"</span>
+                             </div>
+                         </div>
+                         <p>Curl Examples:</p>
+                         <div class="example">
+                             <pre># Basic request
+curl -X POST http://localhost:3001/api/scrape \
+  -H "Content-Type: application/json" \
+  -d '{
+    "searchTerm": "restaurants",
+    "location": "New York",
+    "maxResults": 50,
+    "batchSize": 3,
+    "stealthLevel": "optimized"
+  }'
+
+# With proxy
+curl -X POST http://localhost:3001/api/scrape \
+  -H "Content-Type: application/json" \
+  -d '{
+    "searchTerm": "coffee shops",
+    "location": "Los Angeles",
+    "maxResults": 25,
+    "proxy": "http://username:password@proxy.example.com:8080"
+  }'
+
+# With API key
+curl -X POST http://localhost:3001/api/scrape \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key-here" \
+  -d '{
+    "searchTerm": "restaurants",
+    "location": "Chicago"
+  }'</pre>
+                         </div>
+                     </div>
+
+                                         <div class="api-endpoint">
+                         <div class="endpoint-header">
+                             <span class="method get">GET</span>
+                             <span class="endpoint-path">/api/jobs</span>
+                         </div>
+                         <p class="endpoint-description">Get a list of all scraping jobs.</p>
+                         <p>Curl Examples:</p>
+                         <div class="example">
+                             <pre># Basic request
+curl -X GET http://localhost:3001/api/jobs
+
+# With API key
+curl -X GET http://localhost:3001/api/jobs \
+  -H "x-api-key: your-api-key-here"</pre>
+                         </div>
+                     </div>
+
+                                         <div class="api-endpoint">
+                         <div class="endpoint-header">
+                             <span class="method get">GET</span>
+                             <span class="endpoint-path">/api/jobs/:id/results</span>
+                         </div>
+                         <p class="endpoint-description">Get the results of a specific scraping job by its ID.</p>
+                         <p>Parameters:</p>
+                         <div class="parameters">
+                             <div class="parameter">
+                                 <span class="param-name">id</span>
+                                 <span class="param-type">number</span>
+                                 <span class="param-required">required</span>
+                                 <span class="example">e.g., 123</span>
+                             </div>
+                         </div>
+                         <p>Curl Examples:</p>
+                         <div class="example">
+                             <pre># Basic request
+curl -X GET http://localhost:3001/api/jobs/123/results
+
+# With API key
+curl -X GET http://localhost:3001/api/jobs/123/results \
+  -H "x-api-key: your-api-key-here"</pre>
+                         </div>
+                     </div>
+
+                                         <div class="api-endpoint">
+                         <div class="endpoint-header">
+                             <span class="method get">GET</span>
+                             <span class="endpoint-path">/api/jobs/:id/download/csv</span>
+                         </div>
+                         <p class="endpoint-description">Download job results as CSV file.</p>
+                         <p>Parameters:</p>
+                         <div class="parameters">
+                             <div class="parameter">
+                                 <span class="param-name">id</span>
+                                 <span class="param-type">number</span>
+                                 <span class="param-required">required</span>
+                                 <span class="example">e.g., 123</span>
+                             </div>
+                         </div>
+                         <p>Curl Examples:</p>
+                         <div class="example">
+                             <pre># Download to file
+curl -X GET http://localhost:3001/api/jobs/123/download/csv \
+  -o job_123_results.csv
+
+# With API key
+curl -X GET http://localhost:3001/api/jobs/123/download/csv \
+  -H "x-api-key: your-api-key-here" \
+  -o job_123_results.csv</pre>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html> 
