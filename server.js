@@ -10,7 +10,12 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins in production
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
+}));
 app.use(helmet());
 app.use(compression());
 
@@ -21,7 +26,7 @@ app.use(express.static('public'));
 const jobs = {};
 let jobCounter = 1;
 
-// API key middleware
+// API key middleware - only apply if API_KEY is set
 function apiKeyMiddleware(req, res, next) {
   if (config.apiKey && req.headers['x-api-key'] !== config.apiKey) {
     return res.status(401).json({ error: 'Invalid API key' });
@@ -29,7 +34,10 @@ function apiKeyMiddleware(req, res, next) {
   next();
 }
 
-app.use('/api', apiKeyMiddleware);
+// Only apply API key middleware if API_KEY is configured
+if (config.apiKey) {
+  app.use('/api', apiKeyMiddleware);
+}
 
 // GET /api/docs - API Documentation
 app.get('/api/docs', (req, res) => {
@@ -64,11 +72,11 @@ app.get('/api/docs', (req, res) => {
             jobId: 123
           }
         },
-        curl: {
-          basic: 'curl -X POST http://localhost:3001/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "searchTerm": "restaurants",\n    "location": "New York",\n    "maxResults": 50,\n    "batchSize": 3,\n    "stealthLevel": "optimized"\n  }\'',
-          withProxy: 'curl -X POST http://localhost:3001/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "searchTerm": "coffee shops",\n    "location": "Los Angeles",\n    "maxResults": 25,\n    "proxy": "http://username:password@proxy.example.com:8080"\n  }\'',
-          withApiKey: 'curl -X POST http://localhost:3001/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: your-api-key-here" \\\n  -d \'{\n    "searchTerm": "restaurants",\n    "location": "Chicago"\n  }\''
-        }
+                  curl: {
+            basic: 'curl -X POST http://localhost:3000/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "searchTerm": "restaurants",\n    "location": "New York",\n    "maxResults": 50,\n    "batchSize": 3,\n    "stealthLevel": "optimized"\n  }\'',
+            withProxy: 'curl -X POST http://localhost:3000/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "searchTerm": "coffee shops",\n    "location": "Los Angeles",\n    "maxResults": 25,\n    "proxy": "http://username:password@proxy.example.com:8080"\n  }\'',
+            withApiKey: 'curl -X POST http://localhost:3000/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: your-api-key-here" \\\n  -d \'{\n    "searchTerm": "restaurants",\n    "location": "Chicago"\n  }\''
+          }
       },
       'POST /scrape/bulk': {
         description: 'Start multiple scraping jobs',
@@ -79,7 +87,7 @@ app.get('/api/docs', (req, res) => {
           jobIds: { type: 'array', description: 'Array of job identifiers' }
         },
         curl: {
-          basic: 'curl -X POST http://localhost:3001/api/scrape/bulk \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "jobs": [\n      {\n        "searchTerm": "restaurants",\n        "location": "New York",\n        "maxResults": 20\n      },\n      {\n        "searchTerm": "coffee shops",\n        "location": "Los Angeles",\n        "maxResults": 15\n      }\n    ]\n  }\''
+          basic: 'curl -X POST http://localhost:3000/api/scrape/bulk \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "jobs": [\n      {\n        "searchTerm": "restaurants",\n        "location": "New York",\n        "maxResults": 20\n      },\n      {\n        "searchTerm": "coffee shops",\n        "location": "Los Angeles",\n        "maxResults": 15\n      }\n    ]\n  }\''
         }
       },
       'GET /jobs': {
@@ -102,8 +110,8 @@ app.get('/api/docs', (req, res) => {
           }
         },
         curl: {
-          basic: 'curl -X GET http://localhost:3001/api/jobs',
-          withApiKey: 'curl -X GET http://localhost:3001/api/jobs \\\n  -H "x-api-key: your-api-key-here"'
+          basic: 'curl -X GET http://localhost:3000/api/jobs',
+          withApiKey: 'curl -X GET http://localhost:3000/api/jobs \\\n  -H "x-api-key: your-api-key-here"'
         }
       },
       'GET /jobs/:id': {
@@ -112,8 +120,8 @@ app.get('/api/docs', (req, res) => {
           id: { type: 'number', required: true, description: 'Job identifier' }
         },
         curl: {
-          basic: 'curl -X GET http://localhost:3001/api/jobs/123',
-          withApiKey: 'curl -X GET http://localhost:3001/api/jobs/123 \\\n  -H "x-api-key: your-api-key-here"'
+          basic: 'curl -X GET http://localhost:3000/api/jobs/123',
+          withApiKey: 'curl -X GET http://localhost:3000/api/jobs/123 \\\n  -H "x-api-key: your-api-key-here"'
         }
       },
       'GET /jobs/:id/results': {
@@ -122,8 +130,8 @@ app.get('/api/docs', (req, res) => {
           id: { type: 'number', required: true, description: 'Job identifier' }
         },
         curl: {
-          basic: 'curl -X GET http://localhost:3001/api/jobs/123/results',
-          withApiKey: 'curl -X GET http://localhost:3001/api/jobs/123/results \\\n  -H "x-api-key: your-api-key-here"'
+          basic: 'curl -X GET http://localhost:3000/api/jobs/123/results',
+          withApiKey: 'curl -X GET http://localhost:3000/api/jobs/123/results \\\n  -H "x-api-key: your-api-key-here"'
         }
       },
       'GET /jobs/:id/download/csv': {
@@ -132,8 +140,8 @@ app.get('/api/docs', (req, res) => {
           id: { type: 'number', required: true, description: 'Job identifier' }
         },
         curl: {
-          basic: 'curl -X GET http://localhost:3001/api/jobs/123/download/csv \\\n  -o job_123_results.csv',
-          withApiKey: 'curl -X GET http://localhost:3001/api/jobs/123/download/csv \\\n  -H "x-api-key: your-api-key-here" \\\n  -o job_123_results.csv'
+          basic: 'curl -X GET http://localhost:3000/api/jobs/123/download/csv \\\n  -o job_123_results.csv',
+          withApiKey: 'curl -X GET http://localhost:3000/api/jobs/123/download/csv \\\n  -H "x-api-key: your-api-key-here" \\\n  -o job_123_results.csv'
         }
       },
       'DELETE /jobs/:id': {
@@ -142,22 +150,22 @@ app.get('/api/docs', (req, res) => {
           id: { type: 'number', required: true, description: 'Job identifier' }
         },
         curl: {
-          basic: 'curl -X DELETE http://localhost:3001/api/jobs/123',
-          withApiKey: 'curl -X DELETE http://localhost:3001/api/jobs/123 \\\n  -H "x-api-key: your-api-key-here"'
+          basic: 'curl -X DELETE http://localhost:3000/api/jobs/123',
+          withApiKey: 'curl -X DELETE http://localhost:3000/api/jobs/123 \\\n  -H "x-api-key: your-api-key-here"'
         }
       },
       'GET /settings': {
         description: 'Get current settings',
         curl: {
-          basic: 'curl -X GET http://localhost:3001/api/settings',
-          withApiKey: 'curl -X GET http://localhost:3001/api/settings \\\n  -H "x-api-key: your-api-key-here"'
+          basic: 'curl -X GET http://localhost:3000/api/settings',
+          withApiKey: 'curl -X GET http://localhost:3000/api/settings \\\n  -H "x-api-key: your-api-key-here"'
         }
       },
       'POST /settings': {
         description: 'Update settings',
         curl: {
-          basic: 'curl -X POST http://localhost:3001/api/settings \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "useProxy": true,\n    "proxyList": ["http://proxy1:8080", "http://proxy2:8080"],\n    "requestsPerMinute": 60\n  }\'',
-          withApiKey: 'curl -X POST http://localhost:3001/api/settings \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: your-api-key-here" \\\n  -d \'{\n    "useProxy": true,\n    "proxyList": ["http://proxy1:8080"]\n  }\''
+          basic: 'curl -X POST http://localhost:3000/api/settings \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "useProxy": true,\n    "proxyList": ["http://proxy1:8080", "http://proxy2:8080"],\n    "requestsPerMinute": 60\n  }\'',
+          withApiKey: 'curl -X POST http://localhost:3000/api/settings \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: your-api-key-here" \\\n  -d \'{\n    "useProxy": true,\n    "proxyList": ["http://proxy1:8080"]\n  }\''
         }
       }
     },
@@ -175,9 +183,9 @@ app.get('/api/docs', (req, res) => {
       ]
     },
     examples: {
-      quickStart: 'curl -X POST http://localhost:3001/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -d \'{"searchTerm": "coffee shops", "location": "New York", "maxResults": 10}\'',
-      monitorJob: 'curl -X GET http://localhost:3001/api/jobs/123',
-      downloadResults: 'curl -X GET http://localhost:3001/api/jobs/123/download/csv -o results.csv'
+      quickStart: 'curl -X POST http://localhost:3000/api/scrape \\\n  -H "Content-Type: application/json" \\\n  -d \'{"searchTerm": "coffee shops", "location": "New York", "maxResults": 10}\'',
+      monitorJob: 'curl -X GET http://localhost:3000/api/jobs/123',
+      downloadResults: 'curl -X GET http://localhost:3000/api/jobs/123/download/csv -o results.csv'
     }
   });
 });
@@ -427,9 +435,14 @@ app.get('/', (req, res) => {
 });
 
 // Health check
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => res.json({ 
+  status: 'ok', 
+  timestamp: new Date().toISOString(),
+  port: PORT,
+  apiKeyRequired: !!config.apiKey
+}));
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Dashboard available at: http://localhost:${PORT}`);

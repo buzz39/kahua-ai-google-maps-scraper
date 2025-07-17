@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "generate-env": "node generate-coolify-env.js",
+    "test-api": "node test-api-coolify.js"
   },
   "dependencies": {
     "axios": "^1.6.7",
