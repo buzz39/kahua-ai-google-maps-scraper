@@ -10,6 +10,8 @@ A production-ready, Playwright-powered Google Maps business scraper with Apollo-
 - 📊 Real-time job management
 - 📤 Export CSV/JSON
 - 🐳 Docker-ready
+- 🔄 **Automatic format detection & adaptation**
+- 📈 **Continuous format monitoring & alerts**
 
 ## Quick Start
 
@@ -129,6 +131,32 @@ npm start
 ### General Issues
 - See Playwright docs for browser issues.
 - Use proxies and delays to avoid bans.
+
+### Format Change Protection
+
+Your scraper includes automatic protection against Google Maps format changes:
+
+1. **Format Detection**: Automatically detects current Google Maps layout
+2. **Multiple Selectors**: Uses fallback selectors if primary ones fail
+3. **Continuous Monitoring**: Monitors for format changes and alerts you
+4. **Adaptive Extraction**: Automatically adapts to new layouts
+
+**Test Format Detection**:
+```bash
+npm run test-format
+```
+
+**Monitor Format Changes**:
+- Format history is saved to `./data/format-history.json`
+- Monitor logs are saved to `./data/format-monitor.log`
+- Alerts are triggered when format changes are detected
+
+**What Happens When Google Maps Changes**:
+- ✅ **Automatic Detection**: System detects the change within 24 hours
+- ✅ **Fallback Selectors**: Uses alternative selectors to continue working
+- ✅ **Alert System**: Notifies you immediately about the change
+- ✅ **Format History**: Tracks all changes for analysis
+- ✅ **Recommendations**: Provides guidance on required updates
 
 ### Coolify Deployment Issues
 
