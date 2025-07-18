@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.43.0-focal
+FROM mcr.microsoft.com/playwright:v1.54.1-focal
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN npm ci --only=production
 COPY . .
 
 # Install Playwright browsers (Chromium only for smaller image)
-RUN npx playwright install chromium --with-deps
+RUN npx playwright install chromium
 
 # Create data directory
 RUN mkdir -p /app/data

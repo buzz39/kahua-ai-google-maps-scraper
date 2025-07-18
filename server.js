@@ -125,9 +125,29 @@ app.get('/api/docs', (req, res) => {
         }
       },
       'GET /jobs/:id/results': {
-        description: 'Get job results',
+        description: 'Get job results (returns processing status if job is still running)',
         parameters: {
           id: { type: 'number', required: true, description: 'Job identifier' }
+        },
+        response: {
+          processing: {
+            status: { type: 'string', value: 'processing' },
+            message: { type: 'string', description: 'Status message with progress' },
+            progress: { type: 'number', description: 'Progress percentage (0-100)' },
+            jobStatus: { type: 'string', enum: ['queued', 'running'] },
+            estimatedTimeRemaining: { type: 'string', description: 'Estimated time remaining' }
+          },
+          completed: {
+            status: { type: 'string', value: 'completed' },
+            results: { type: 'array', description: 'Array of business data' },
+            totalResults: { type: 'number', description: 'Total number of results' },
+            completedAt: { type: 'string', description: 'ISO timestamp when job completed' }
+          },
+          failed: {
+            status: { type: 'string', value: 'failed' },
+            error: { type: 'string', description: 'Error message' },
+            message: { type: 'string', description: 'Failure description' }
+          }
         },
         curl: {
           basic: 'curl -X GET http://localhost:3000/api/jobs/123/results',
@@ -280,10 +300,12 @@ app.post('/api/scrape', async (req, res) => {
       });
       jobs[jobId].status = 'completed';
       jobs[jobId].progress = 100;
+      jobs[jobId].completedAt = new Date().toISOString();
       // jobs[jobId].results = ... already set by progressCb
     } catch (err) {
       jobs[jobId].status = 'failed';
       jobs[jobId].error = err.message || 'Scraping failed';
+      jobs[jobId].failedAt = new Date().toISOString();
     } finally {
       await scraper.close();
     }
@@ -342,9 +364,11 @@ app.post('/api/scrape/bulk', async (req, res) => {
         });
         jobs[jobId].status = 'completed';
         jobs[jobId].progress = 100;
+        jobs[jobId].completedAt = new Date().toISOString();
       } catch (err) {
         jobs[jobId].status = 'failed';
         jobs[jobId].error = err.message || 'Scraping failed';
+        jobs[jobId].failedAt = new Date().toISOString();
       } finally {
         await scraper.close();
       }
@@ -370,6 +394,38 @@ app.get('/api/jobs/:id', (req, res) => {
 app.get('/api/jobs/:id/results', (req, res) => {
   const job = jobs[req.params.id];
   if (!job) return res.status(404).json({ error: 'Job not found' });
+  
+  // Check job status
+  if (job.status === 'queued' || job.status === 'running') {
+    return res.json({
+      status: 'processing',
+      message: `Job is currently ${job.status}. Progress: ${job.progress}%`,
+      progress: job.progress,
+      jobStatus: job.status,
+      estimatedTimeRemaining: job.status === 'running' ? 'Calculating...' : 'Pending...'
+    });
+  }
+  
+  // Job is completed or failed
+  if (job.status === 'completed') {
+    return res.json({
+      status: 'completed',
+      results: job.results,
+      totalResults: job.results.length,
+      completedAt: job.completedAt || new Date().toISOString()
+    });
+  }
+  
+  // Job failed
+  if (job.status === 'failed') {
+    return res.status(500).json({
+      status: 'failed',
+      error: job.error,
+      message: 'Job failed during processing'
+    });
+  }
+  
+  // Fallback
   res.json(job.results);
 });
 

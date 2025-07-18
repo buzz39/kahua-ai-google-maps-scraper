@@ -340,7 +340,13 @@ function updateStats() {
     const totalJobs = jobs.length;
     const completedJobs = jobs.filter(job => job.status === 'completed').length;
     const runningJobs = jobs.filter(job => job.status === 'running').length;
-    const totalBusinesses = jobs.reduce((sum, job) => sum + job.results.length, 0);
+    const totalBusinesses = jobs.reduce((sum, job) => {
+        // Handle both old format (job.results array) and new format (job.results array from completed jobs)
+        if (job.status === 'completed' && Array.isArray(job.results)) {
+            return sum + job.results.length;
+        }
+        return sum;
+    }, 0);
 
     document.getElementById('totalJobs').textContent = totalJobs;
     document.getElementById('completedJobs').textContent = completedJobs;
@@ -359,7 +365,7 @@ function updateResults() {
 
     // Get latest completed job results
     const latestJob = completedJobs[completedJobs.length - 1];
-    const allResults = latestJob.results;
+    const allResults = Array.isArray(latestJob.results) ? latestJob.results : [];
 
     if (allResults.length === 0) {
         document.getElementById('resultsContainer').innerHTML = 
@@ -454,10 +460,19 @@ function updateResults() {
 async function viewResults(jobId) {
     try {
         const response = await fetch(`${API_BASE}/jobs/${jobId}/results`);
-        const results = await response.json();
+        const data = await response.json();
         
-        // Create modal or update results section
-        alert(`Job ${jobId} has ${results.length} results. Check the results table below.`);
+        // Handle new API response format
+        if (data.status === 'processing') {
+            alert(`Job ${jobId} is currently ${data.jobStatus}. Progress: ${data.progress}%`);
+        } else if (data.status === 'completed') {
+            alert(`Job ${jobId} has ${data.totalResults} results. Check the results table below.`);
+        } else if (data.status === 'failed') {
+            alert(`Job ${jobId} failed: ${data.error}`);
+        } else {
+            // Fallback for old format
+            alert(`Job ${jobId} has ${data.length || 0} results. Check the results table below.`);
+        }
     } catch (error) {
         showNotification(`Error loading results: ${error.message}`, 'error');
     }
