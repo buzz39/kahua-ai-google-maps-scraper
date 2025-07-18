@@ -34,7 +34,7 @@ environmentVariables:
   LOG_LEVEL: info
   DEBUG: false
   TRUST_PROXY: false
-  SESSION_SECRET: "a5c622ec7213f8cf5e4e4ceae4af74655780fa8549e22008492e9c8c6f001213"
+  SESSION_SECRET: "7ae23b58162904dacf802e49a708a3cd34ff4dfe6e03afe1d4a654592fc92374"
 
 volumes:
   - hostPath: /app/data
