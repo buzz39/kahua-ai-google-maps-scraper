@@ -24,8 +24,8 @@ async function testPlaywrightVersion() {
     
     await browser.close();
     console.log('✅ Browser closed successfully');
-    console.log('🎉 Playwright v1.53.0 test completed successfully!');
-    console.log('📦 Docker image mcr.microsoft.com/playwright:v1.53.0-focal should work correctly');
+    console.log('🎉 Playwright v1.54.0 test completed successfully!');
+    console.log('📦 Docker image mcr.microsoft.com/playwright:v1.54.0-noble should work correctly');
     
   } catch (error) {
     console.error('❌ Playwright test failed:', error.message);
