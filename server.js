@@ -131,6 +131,7 @@ app.get('/api/docs', (req, res) => {
         },
         response: {
           processing: {
+            jobId: { type: 'number', description: 'Job identifier' },
             status: { type: 'string', value: 'processing' },
             message: { type: 'string', description: 'Status message with progress' },
             progress: { type: 'number', description: 'Progress percentage (0-100)' },
@@ -138,12 +139,14 @@ app.get('/api/docs', (req, res) => {
             estimatedTimeRemaining: { type: 'string', description: 'Estimated time remaining' }
           },
           completed: {
+            jobId: { type: 'number', description: 'Job identifier' },
             status: { type: 'string', value: 'completed' },
             results: { type: 'array', description: 'Array of business data' },
             totalResults: { type: 'number', description: 'Total number of results' },
             completedAt: { type: 'string', description: 'ISO timestamp when job completed' }
           },
           failed: {
+            jobId: { type: 'number', description: 'Job identifier' },
             status: { type: 'string', value: 'failed' },
             error: { type: 'string', description: 'Error message' },
             message: { type: 'string', description: 'Failure description' }
@@ -398,6 +401,7 @@ app.get('/api/jobs/:id/results', (req, res) => {
   // Check job status
   if (job.status === 'queued' || job.status === 'running') {
     return res.json({
+      jobId: job.id,
       status: 'processing',
       message: `Job is currently ${job.status}. Progress: ${job.progress}%`,
       progress: job.progress,
@@ -409,6 +413,7 @@ app.get('/api/jobs/:id/results', (req, res) => {
   // Job is completed or failed
   if (job.status === 'completed') {
     return res.json({
+      jobId: job.id,
       status: 'completed',
       results: job.results,
       totalResults: job.results.length,
@@ -419,6 +424,7 @@ app.get('/api/jobs/:id/results', (req, res) => {
   // Job failed
   if (job.status === 'failed') {
     return res.status(500).json({
+      jobId: job.id,
       status: 'failed',
       error: job.error,
       message: 'Job failed during processing'
